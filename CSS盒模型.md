@@ -1,0 +1,187 @@
+# 1. CSS 盒模型
+
+所有 HTML 元素可以看作盒子，CSS 盒模型本质上是一个盒子，封装周围的 HTML 元素，它包括：边距，边框，填充，和实际内容。
+
+Margin(外边距) - 清除边框外的区域，外边距是透明的。
+Border(边框) - 围绕在内边距和内容外的边框。
+Padding(内边距) - 清除内容周围的区域，内边距是透明的。
+Content(内容) - 盒子的内容，显示文本和图像。
+
+## 1.1. 标准盒子模型
+
+W3C 标准盒子模式包括内容(content)、填充(padding)、边框(border)、边界(margin)，并且 content 部分不包含其他部分。
+
+![W3C标准盒子模型](https://upload-images.jianshu.io/upload_images/5217911-4cd25beec9f2be7a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/795/format/webp)
+
+## 1.2. IE 盒子模型
+
+IE 盒子模型的范围也包括 content、padding、border、margin,所不同的是 IE 盒子模型的 content 包含了 border 和 padding。
+![IE盒子模型](https://upload-images.jianshu.io/upload_images/5217911-24aa8e79ae622d9c.jpeg?imageMogr2/auto-orient/strip%7CimageView2/2/w/791/format/webp)
+
+## 1.3. CSS 如何设置这两种模型
+
+W3C：box-sizing:content-box;（浏览器默认）
+IE：box-sizing:border-box;
+
+## 1.4. JS 如何设置获取盒模型对应的宽和高
+
+1. dom.style.width/height（只适用获取内联元素的宽和高）
+2. dom.currentStyle.width/height （获取渲染后的宽高，只有 IE 支持）
+3. window.getComputedStyle(dom).width/height （与 2 原理相似，但是兼容性，通用性会更好一些）
+4. dom.getBoundingClientRect().width/height （计算一个元素的绝对位置（根据视窗），获取到四个元素 left,top,width,height)
+
+## 1.5. BFC（边距重叠解决方案）
+
+### 1.5.1. 基本概念
+
+BFC（Block formatting context）直译为块级格式化上下文。它是一个独立的渲染区域。
+
+### 1.5.2. BFC 原理、渲染规则
+
+1. BFC 垂直方向的距离由 margin 决定(属于同一个 BFC 的两个相邻 Box 的 margin 会发生重叠，与方向无关)
+2. BFC 的区域不会与 float 的元素区域重叠
+3. BFC 在页面上是一个隔离的独立容器，容器里面的子元素不会影响到外面元素，反之亦然
+4. 计算 BFC 高度时候，浮动子元素也参与计算
+5. 每个元素的 margin box 的左边， 与包含块 border box 的左边相接触(对于从左往右的格式化，否则相反)。即使存在浮动也是如此
+6. 内部的 Box 会在垂直方向上一个接一个的放置
+
+### 1.5.3. 如何创建 BFC
+
+1. 根元素
+2. float 属性不为 none
+3. position 属性为 absolute 或 fixed
+4. display 的值为 inline-block、table-cell、table-caption、flex、inline-flex
+5. overflow 的值不为 visible
+
+### 1.5.4. BFC 的作用
+
+#### 1.5.4.1. 不和浮动元素重叠
+
+如果一个浮动元素后面跟着一个非浮动的元素，那么就会产生一个覆盖的现象，很多自适应的两栏布局就是这么做的。
+
+```html
+<style>
+    body {
+        width: 300px;
+        position: relative;
+    }
+
+    .aside {
+        width: 100px;
+        height: 150px;
+        float: left;
+        background: #f66;
+    }
+
+    .main {
+        height: 200px;
+        background: #fcc;
+    }
+</style>
+<body>
+    <div class="aside"></div>
+    <div class="main"></div>
+</body>
+```
+
+![覆盖](https://user-gold-cdn.xitu.io/2018/1/4/160bfae6ea247e92?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
+
+很明显，.aside 和.mian 重叠了。
+
+我们可以通过通过触发 main 生成 BFC， 来实现自适应两栏布局
+
+```html
+.main {
+overflow: hidden;
+}
+```
+
+当触发 main 生成 BFC 后，这个新的 BFC 不会与浮动的 aside 重叠。因此会根据包含块的宽度，和 aside 的宽度，自动变窄。效果如下：
+![BFC](https://user-gold-cdn.xitu.io/2018/1/4/160bfae6ebe2f403?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
+
+#### 1.5.4.2. 清除元素内部浮动
+
+```html
+<style>
+    .par {
+        border: 5px solid #fcc;
+        width: 300px;
+    }
+
+    .child {
+        border: 5px solid #f66;
+        width:100px;
+        height: 100px;
+        float: left;
+    }
+</style>
+<body>
+    <div class="par">
+        <div class="child"></div>
+        <div class="child"></div>
+    </div>
+</body>
+```
+
+![浮动](https://user-gold-cdn.xitu.io/2018/1/4/160bfae723e59a6f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
+
+为达到清除内部浮动，我们可以触发 par 生成 BFC，那么 par 在计算高度时，par 内部的浮动元素 child 也会参与计算。
+
+```html
+.par{
+  overflow:hidden
+}
+```
+
+![清除浮动](https://user-gold-cdn.xitu.io/2018/1/4/160bfae6ea1917ce?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
+
+#### 1.5.4.3. 防止垂直 margin 重叠
+
+```html
+<style>
+    p {
+        color: #f55;
+        background: #fcc;
+        width: 200px;
+        line-height: 100px;
+        text-align:center;
+        margin: 100px;
+    }
+</style>
+<body>
+    <p>Haha</p>
+    <p>Hehe</p>
+</body>
+```
+
+![重叠](https://user-gold-cdn.xitu.io/2018/1/4/160bfae6e9f5730f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
+
+两个 p 之间的距离为 100px，margin 重叠。根据 BFC 布局规则第二条：
+
+>Box 垂直方向的距离由 margin 决定。属于同一个 BFC 的两个相邻 Box 的 margin 会发生重叠
+
+我们可以在 p 外面包裹一层容器，并触发该容器生成一个 BFC。那么两个 P 便不属于同一个 BFC，就不会发生 margin 重叠了。
+
+```html
+<style>
+    .wrap {
+        overflow: hidden;
+    }
+    p {
+        color: #f55;
+        background: #fcc;
+        width: 200px;
+        line-height: 100px;
+        text-align:center;
+        margin: 100px;
+    }
+</style>
+<body>
+    <p>Haha</p>
+    <div class="wrap">
+        <p>Hehe</p>
+    </div>
+</body>
+```
+
+![防止重叠](https://user-gold-cdn.xitu.io/2018/1/4/160bfae6ebd2b70d?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
